@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "citresewnrebuilt",
+  "version": "${version}",
+  "name": "CITResewnRebuilt",
+  "description": "Fork of CITResewn, updated for Minecraft 1.21.2+. Enables MCPatcher texture packs on modern versions.",
+  "authors": [
+    "Lightre"
+  ],
+  "contributors": [
+    "SHsuperCM (original CIT Resewn)"
+  ],
+  "license": "MIT",
+  "icon": "assets/citresewnrebuilt/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "com.lightre.citresewnrebuilt.CITResewn"
+    ]
+  },
+  "mixins": [
+    "citresewn.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "recommends": {
+    "cloth-config": "*",
+    "modmenu": "*"
+  },
+  "breaks": {
+    "canvas": "*"
+  }
+}

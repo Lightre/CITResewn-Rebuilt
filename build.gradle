@@ -1,0 +1,99 @@
+plugins {
+    id 'fabric-loom' version '1.12-SNAPSHOT'
+    id 'maven-publish'
+    // id "io.shcm.shsupercm.fabric.fletchingtable" version "1.6"
+}
+
+def mcVer = project.findProperty("mcVer")
+def versionProps = new Properties()
+
+if (mcVer != null) {
+    def versionPropsFile = file("versions/${mcVer}/gradle.properties")
+    if (versionPropsFile.exists()) {
+        versionPropsFile.withInputStream { versionProps.load(it) }
+    } else {
+        throw new GradleException("versions/${mcVer}/gradle.properties not found!")
+    }
+} else {
+    def rootPropsFile = file("gradle.properties")
+    if (rootPropsFile.exists()) {
+        rootPropsFile.withInputStream { versionProps.load(it) }
+    } else {
+        throw new GradleException("Root gradle.properties not found!")
+    }
+}
+
+versionProps.each { key, value -> project.ext[key.toString()] = value.toString() }
+
+version = project.mod_version
+group = project.maven_group
+
+repositories {
+    mavenCentral()
+    maven { url = "https://maven.fabricmc.net/" }
+    maven { url = "https://maven.terraformersmc.com/" }
+    maven { url = "https://maven.shedaniel.me/" }
+    // maven { url = "https://maven.shcm.io/" }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.ext.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.ext.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.ext.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.ext.fabric_version}"
+
+    modCompileOnly "me.shedaniel.cloth:cloth-config-fabric:${project.ext.cloth_config_version}"
+    modRuntimeOnly "me.shedaniel.cloth:cloth-config-fabric:${project.ext.cloth_config_version}"
+    modCompileOnly "com.terraformersmc:modmenu:${project.ext.modmenu_version}"
+    modRuntimeOnly "com.terraformersmc:modmenu:${project.ext.modmenu_version}"
+
+    // compileOnly "io.shcm.shsupercm.fabric.fletchingtable:fletchingtable-fabric:1.6"
+}
+
+/*
+fletchingTable {
+    defaultMixinEnvironment = "auto"
+}
+*/
+
+processResources {
+    inputs.property("version", project.version)
+    inputs.property("minecraft_version", project.ext.minecraft_version)
+    inputs.property("loader_version", project.ext.loader_version)
+
+    filesMatching("fabric.mod.json") {
+        expand(version: project.version,
+                minecraft_version: project.ext.minecraft_version,
+                loader_version: project.ext.loader_version)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+    archiveFileName = "${project.archives_base_name}-fabric-${project.mod_version}+mc${project.ext.minecraft_version}-dev.jar"
+    from("LICENSE") {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}
+
+remapJar {
+    archiveFileName = "${project.archives_base_name}-fabric-${project.mod_version}+mc${project.ext.minecraft_version}.jar"
+}
+
+publishing {
+    publications {
+        create("mavenJava", MavenPublication) {
+            artifactId = project.archives_base_name
+            from components.java
+        }
+    }
+}

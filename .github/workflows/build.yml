@@ -1,0 +1,113 @@
+name: Build # Made by Lightre
+
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'versions/**'
+      - '.github/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'versions/**'
+      - '.github/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Detect gradle.properties source
+        id: detect
+        run: |
+          if [ -d "versions" ] && [ "$(ls -A versions)" ]; then
+            echo "versions folder detected and not empty."
+            echo "found_versions=true" >> $GITHUB_OUTPUT
+          else
+            echo "no versions folder found, using root directory."
+            echo "found_versions=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build all versioned modules
+        if: steps.detect.outputs.found_versions == 'true'
+        run: |
+          ROOT_PROPS="gradle.properties"
+          cp "$ROOT_PROPS" "$ROOT_PROPS.bak"
+
+          mkdir -p build_versions
+
+          first_build=true
+          for version_dir in versions/*; do
+            if [ -d "$version_dir" ] && [ -f "$version_dir/gradle.properties" ]; then
+              echo "--------------------------------------------"
+              echo "Building for version: $version_dir"
+              echo "--------------------------------------------"
+
+              cat "$ROOT_PROPS.bak" > "$ROOT_PROPS"
+              echo "" >> "$ROOT_PROPS"
+              cat "$version_dir/gradle.properties" >> "$ROOT_PROPS"
+
+              rm -rf build/libs/*
+
+              if [ "$first_build" = true ]; then
+                ./gradlew clean build --no-daemon --stacktrace
+                first_build=false
+              else
+                ./gradlew build --no-daemon --stacktrace
+              fi
+
+              version_name=$(basename "$version_dir")
+              mkdir -p "build_versions/$version_name"
+              cp -r build/libs/* "build_versions/$version_name/" || true
+
+              echo "Build completed for: $version_name"
+              echo ""
+            fi
+          done
+
+          mv "$ROOT_PROPS.bak" "$ROOT_PROPS"
+
+      - name: Build single root version
+        if: steps.detect.outputs.found_versions == 'false'
+        run: |
+          rm -rf build/libs/*
+          ./gradlew clean build --no-daemon --stacktrace
+          mkdir -p build_versions/root
+          cp -r build/libs/* build_versions/root/ || true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CITResewnRebuilt-Builds
+          path: build_versions/

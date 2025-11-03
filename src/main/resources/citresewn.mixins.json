@@ -1,0 +1,10 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.lightre.citresewnrebuilt.mixin",
+  "plugin": "com.lightre.citresewnrebuilt.config.CITResewnMixinConfiguration",
+  "compatibilityLevel": "JAVA_17",
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
