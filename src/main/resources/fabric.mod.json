@@ -18,6 +18,11 @@
       "com.lightre.citresewnrebuilt.CITResewn"
     ]
   },
+  "contact": {
+    "homepage": "https://modrinth.com/mod/cit-resewn-rebuilt",
+    "sources": "https://github.com/Lightre/CITResewn-Rebuilt",
+    "issues": "https://github.com/Lightre/CITResewn-Rebuilt/issues"
+  },
   "mixins": [
     "citresewn.mixins.json"
   ],
